@@ -4,7 +4,7 @@
 
 <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&duration=3000&pause=1000&color=00F7F7&center=true&vCenter=true&width=600&lines=Backend+%26+Full-Stack+Developer;Master's+Student+%40+Stevens+Tech;Building+Scalable+Systems;Optimizing+Performance+%26+Databases" alt="Typing SVG" />
 
-[![LinkedIn](https://img.shields.io/badge/-LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/YOUR_LINKEDIN)
+[![LinkedIn](https://img.shields.io/badge/-LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/sairithik-komuravelly-8348b124b/)
 [![Email](https://img.shields.io/badge/-Email-EA4335?style=flat-square&logo=gmail&logoColor=white)](mailto:skomurav@stevens.edu)
 [![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat-square&logo=github)](https://github.com/sairithik9849)
 
@@ -21,7 +21,7 @@ class Developer:
         self.role = "Backend & Full-Stack Developer"
         self.education = "MS in CS @ Stevens Institute of Technology"
         self.gpa = 4.0
-        self.interests = ["System Optimization", "Database Engineering", "Microservices"]
+        self.interests = ["Database Engineering", "Full-Stack Development", "Building Scalable Systems"]
     
     def get_achievements(self):
         return {

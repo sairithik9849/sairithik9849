@@ -54,18 +54,6 @@ class Developer:
 
 ---
 
-#### 💎 Featured Projects
-
-<div align="center">
-
-| <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Magnifying%20Glass%20Tilted%20Left.png" width="50" /> **Query Optimization Engine** | <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Globe%20Showing%20Americas.png" width="50" /> **Geospatial Event Platform** |
-|:---:|:---:|
-| <br>**⚡ 60% faster** than traditional SQL joins<br><br>✨ Custom Python compiler & DSL<br>🧠 In-memory OLAP processing<br>🔧 Built from scratch w/ HAVING support<br><br>[`Python`](https://github.com/topics/python) [`Databases`](https://github.com/topics/database) [`Optimization`](https://github.com/topics/optimization)<br><br> | <br>**🚀 90% latency reduction** (450ms → 50ms)<br><br>⚡ Redis + Elasticsearch optimization<br>📊 500K+ indexed documents<br>🔔 Real-time alerts w/ RabbitMQ<br><br>[`Next.js`](https://github.com/topics/nextjs) [`Microservices`](https://github.com/topics/microservices) [`AWS`](https://github.com/topics/aws)<br><br> |
-
-</div>
-
----
-
 ### 💻 Most Used Languages
 
 <div align="center">

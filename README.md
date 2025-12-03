@@ -54,19 +54,9 @@ class Developer:
 
 ---
 
-### 💻 Most Used Languages
-
 <div align="center">
 
-![Top Languages](https://github-readme-stats.vercel.app/api/top-langs/?username=sairithik9849&layout=compact&theme=tokyonight&hide_border=true&bg_color=0D1117&langs_count=8)
-
-</div>
-
----
-
-<div align="center">
-
-### ⚡ *"Building systems that scale, optimizing code that matters"*
+### ⚡ *Building systems that scale, optimizing code that matters*
 
 ![Profile Views](https://komarev.com/ghpvc/?username=sairithik9849&color=00F7F7&style=flat-square&label=Profile+Views)
 

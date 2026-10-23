@@ -1,0 +1,14 @@
+{
+  "name": "sairithik9849",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:header": "node scripts/build-header.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "fontkit": "2.0.4"
+  }
+}

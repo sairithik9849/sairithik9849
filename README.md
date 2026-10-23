@@ -1,63 +1,14 @@
-<div align="center">
+<a href="https://heysai.dev">
+  <picture>
+    <source media="(min-width: 1012px) and (prefers-color-scheme: dark)" srcset="assets/header-dark.svg">
+    <source media="(min-width: 1012px) and (prefers-color-scheme: light)" srcset="assets/header-light.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/header-phone-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/header-phone-light.svg">
+    <img src="assets/header-light.svg" width="100%" alt="Sairithik, in dot-matrix letters that change to Sai and then heysai.dev. Fast with AI. Fluent without it. A diagram of my multi-agent workflow: five agents on four models research a ticket, merge, debate, pass a review gate, and hand off to a human.">
+  </picture>
+</a>
 
-# 👨‍💻 Sairithik Komuravelly
+Software engineer in New York. I use AI to ship fast, and I read what it writes well enough to change it by hand. Lately that's [Megatron](https://github.com/Megatron-HQ/Megatron), an open-source desktop app for Claude Code skills with 40+ users; an MCP server that lets non-technical staff query a data warehouse in plain English; and a multi-agent workflow that halved my team's time per ticket.
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=22&duration=3000&pause=1000&color=00F7F7&center=true&vCenter=true&width=600&lines=Backend+%26+Full-Stack+Developer;Master's+Student+%40+Stevens+Tech;Building+Scalable+Systems;Optimizing+Performance+%26+Databases" alt="Typing SVG" />
-
-[![LinkedIn](https://img.shields.io/badge/-LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/sairithik-komuravelly-8348b124b/)
-[![Email](https://img.shields.io/badge/-Email-EA4335?style=flat-square&logo=gmail&logoColor=white)](mailto:skomurav@stevens.edu)
-[![GitHub](https://img.shields.io/badge/-GitHub-181717?style=flat-square&logo=github)](https://github.com/sairithik9849)
-
-</div>
-
----
-
-### 🚀 About Me
-
-```python
-class Developer:
-    def __init__(self):
-        self.name = "Sairithik Komuravelly"
-        self.role = "Backend & Full-Stack Developer"
-        self.education = "MS in CS @ Stevens Institute of Technology"
-        self.gpa = 4.0
-        self.interests = ["Database Engineering", "Full-Stack Development", "Building Scalable Systems"]
-    
-    def get_achievements(self):
-        return {
-            "performance": "90% API latency reduction (450ms → 50ms)",
-            "optimization": "60% faster query execution with custom engine",
-            "scholarship": "$16,000 Merit Award"
-        }
-```
-
----
-
-### 🛠️ Tech Arsenal
-
-<div align="center">
-
-![JavaScript](https://img.shields.io/badge/-JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
-![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![Python](https://img.shields.io/badge/-Python-3776AB?style=flat-square&logo=python&logoColor=white)
-![Node.js](https://img.shields.io/badge/-Node.js-339933?style=flat-square&logo=node.js&logoColor=white)
-![React](https://img.shields.io/badge/-React-61DAFB?style=flat-square&logo=react&logoColor=black)
-![Next.js](https://img.shields.io/badge/-Next.js-000000?style=flat-square&logo=next.js&logoColor=white)
-![MongoDB](https://img.shields.io/badge/-MongoDB-47A248?style=flat-square&logo=mongodb&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)
-![Redis](https://img.shields.io/badge/-Redis-DC382D?style=flat-square&logo=redis&logoColor=white)
-![Docker](https://img.shields.io/badge/-Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
-![AWS](https://img.shields.io/badge/-AWS-232F3E?style=flat-square&logo=amazon-aws&logoColor=white)
-![GraphQL](https://img.shields.io/badge/-GraphQL-E10098?style=flat-square&logo=graphql&logoColor=white)
-
-</div>
-
----
-
-<div align="center">
-
-### ⚡ *Building systems that scale, optimizing code that matters*
-
-![Profile Views](https://komarev.com/ghpvc/?username=sairithik9849&color=00F7F7&style=flat-square&label=Profile+Views)
-
-</div>
+<samp>open to full-time SWE roles · NYC or Bay Area</samp><br>
+<samp><a href="https://heysai.dev">heysai.dev</a> · <a href="https://www.linkedin.com/in/sai-rithik-engineer/">linkedin</a> · <a href="mailto:sairithik8639@gmail.com">sairithik8639@gmail.com</a></samp>

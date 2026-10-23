@@ -217,12 +217,21 @@ function orchestration() {
     `<stop offset="0" class="st-m"/><stop offset="0.35" class="st-m"/><stop offset="0.5" class="st-i"/><stop offset="0.65" class="st-m"/><stop offset="1" class="st-m"/>` +
     `<animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="200 0" dur="1.4s" repeatCount="indefinite"/>` +
     `</linearGradient></defs>`;
-  const readout = phases.map(([a, b, title, line], p) => {
-    const x0 = +(CX - (LOADER + GAP + outline(F.sansMedium, title, 0, 0, 18).width) / 2).toFixed(1);
-    return `<g class="pk" opacity="0">${fade(a, b)}${cells(x0, 276, p < 6)}` +
-      txt("sansMedium", title, x0 + LOADER + GAP, 292, 18, `fill="url(#shim)"`) +
-      txt("sans", line, CX, 319, 17, `class="mute"`, { anchor: "middle" }) + `</g>`;
-  }).join("");
+  const xs = phases.map(([, , title]) => +(CX - (LOADER + GAP + outline(F.sansMedium, title, 0, 0, 18).width) / 2).toFixed(1));
+  const readout = phases.map(([a, b, title, line], p) =>
+    `<g class="pk" opacity="0">${fade(a, b)}` +
+    txt("sansMedium", title, xs[p] + LOADER + GAP, 292, 18, `fill="url(#shim)"`) +
+    txt("sans", line, CX, 319, 17, `class="mute"`, { anchor: "middle" }) + `</g>`).join("");
+  // One loader lives outside the per-stage fades so it never blinks out between stages; it slides to the
+  // next title's position while the old title fades out, then swaps to solid (no fade) for the last stage.
+  const slide = [[0, xs[0]], ...phases.flatMap(([, b], p) => [[f(b - fo), xs[p]], [b, xs[(p + 1) % 7]]])];
+  const loader =
+    `<g class="pk" transform="translate(${xs[0]} 0)">` +
+    `<animateTransform attributeName="transform" type="translate" values="${slide.map(([, x]) => `${x} 0`).join(";")}" ` +
+    `keyTimes="${slide.map(([t]) => t).join(";")}" calcMode="spline" ` +
+    `keySplines="${slide.slice(1).map((_, i) => i % 2 ? "0.4 0 0.2 1" : "0 0 1 1").join(";")}" dur="${T}s" repeatCount="indefinite"/>` +
+    `<g>${cells(0, 276, true)}<animate attributeName="opacity" values="1;0" keyTimes="0;${S(6, 0)}" calcMode="discrete" dur="${T}s" repeatCount="indefinite"/></g>` +
+    glow(cells(0, 276, false), [[S(6, 0), 1]]) + `</g>`;
 
   // Legend points surface beside their nodes only while that stage runs, so the diagram explains itself.
   const NAMES = { claude: "Opus", grok: "Grok", codex: "Codex", gemini: "Gemini" };
@@ -238,7 +247,7 @@ function orchestration() {
 
   const heading = txt("mono", "MY MULTI-AGENT WORKFLOW", CX, 64, 14, `class="mute"`, { tracking: 2, anchor: "middle" });
 
-  return shimmer + heading + wires + nodes + lights + notes + packets + pulse + readout;
+  return shimmer + heading + wires + nodes + lights + notes + packets + pulse + readout + loader;
 }
 
 const MOTTO = "Fast with AI. Fluent without it.";

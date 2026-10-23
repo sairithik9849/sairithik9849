@@ -4,7 +4,7 @@
     <source media="(min-width: 1012px) and (prefers-color-scheme: light)" srcset="assets/header-light.svg">
     <source media="(prefers-color-scheme: dark)" srcset="assets/header-phone-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="assets/header-phone-light.svg">
-    <img src="assets/header-light.svg" width="100%" alt="Sairithik, in dot-matrix letters that change to Sai and then heysai.dev. Fast with AI. Fluent without it. A diagram of my multi-agent workflow: five agents on four models research a ticket, merge, debate, pass a review gate, and hand off to a human.">
+    <img src="assets/header-light.svg" width="100%" alt="Sairithik, in dot-matrix letters that change to Sai and then heysai.dev. I build products, AI tooling, and the workflows that run them. Fast with AI, lost without it, with lost struck out and fluent written in by hand. A diagram of my multi-agent workflow: five agents on four models research a ticket, merge, debate, pass a review gate, and hand off to a human.">
   </picture>
 </a>
 

@@ -16,7 +16,7 @@ The four `assets/*.svg` are build output of `scripts/build-header.mjs`: edit the
 - The header is described twice: `TITLE`/`DESC` in the script and the `<img alt>` in `README.md`. A content change updates both.
 - The script was ported from the prototype at https://claude.ai/artifact/KFzqbeS64tacyfLTKTsc9S; the script is now the source of truth.
 
-A header change is done when all four SVGs have been rendered in a browser and looked at, plus one under `prefers-reduced-motion: reduce` (frozen SAIRITHIK, full diagram, no packets or readout). Phone reuses the desktop diagram, so a desktop edit can break phone.
+A header change is done when all four SVGs have been rendered in a browser and looked at, plus one under `prefers-reduced-motion: reduce` (frozen SAIRITHIK, full diagram, finished tagline, no packets or readout). Phone reuses the desktop diagram, so a desktop edit can break phone.
 
 ## Copy
 

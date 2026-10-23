@@ -8,8 +8,8 @@ const FONT_DIR = new URL(".fonts/", import.meta.url);
 const ASSETS = new URL("../assets/", import.meta.url);
 
 // An old user agent makes Google Fonts serve static TTFs instead of WOFF2, the plainest format to cache and parse.
-const FONT_CSS = "https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500&family=Martian+Mono:wght@400";
-const WANT = { sans: ["Instrument Sans", 400], sansMedium: ["Instrument Sans", 500], mono: ["Martian Mono", 400] };
+const FONT_CSS = "https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500&family=Martian+Mono:wght@400&family=Kalam:wght@400";
+const WANT = { sans: ["Instrument Sans", 400], sansMedium: ["Instrument Sans", 500], mono: ["Martian Mono", 400], hand: ["Kalam", 400] };
 
 async function loadFonts() {
   await mkdir(FONT_DIR, { recursive: true });
@@ -79,9 +79,9 @@ const FRAMES = [
   { 3: "S", 4: "A", 5: "I" },
   { 0: "H", 1: "E", 2: "Y", 3: "S", 4: "A", 5: "I", 6: ".", 7: "D", 8: "E", 9: "V" },
 ];
-// The left column (panel, motto, tagline) is centered as one block on the right column's
+// The left column (panel, two-line headline, tagline) is centered as one block on the right column's
 // vertical center (y ≈ 188), so neither column carries extra space above or below.
-const COLS = 73, ROWS = 9, PITCH = 8.8, X0 = 48, Y0 = 106;
+const COLS = 73, ROWS = 9, PITCH = 8.8, X0 = 48, Y0 = 91;
 
 function litAt(f, glyphRow, col) {
   const c = col - 1;
@@ -250,23 +250,92 @@ function orchestration() {
   return shimmer + heading + wires + nodes + lights + notes + packets + pulse + readout + loader;
 }
 
-const MOTTO = "Fast with AI. Fluent without it.";
-const TAGLINE = "PRODUCTS · AI TOOLING · AI WORKFLOWS";
+const HEADLINE = ["I build products, AI tooling,", "and the workflows that run them."];
+const headline = (x, y) => HEADLINE.map((line, i) => txt("sans", line, x, y + i * 30, 24, `class="ink"`)).join("");
+// The tagline acts out its claim once on load: the sentence types out, then a pen strikes "lost" and writes
+// "fluent" in by hand. Ported from 21st.dev's Second Draft Text (@ham7a311) to one-shot SMIL, since GitHub's
+// <img> runs no JS.
+const DRAFT = { lead: "Fast with AI, ", struck: "lost", fix: "fluent", tail: " without it." };
+const STRIKE = "M2 13 C 22 10, 40 12, 60 9 S 88 8, 98 6"; // drawn in a 100x20 box
+const FLOURISH = "M3 9 C 30 15, 70 15, 104 8 C 112 6, 117 5, 116 10 C 114 16, 96 18, 84 15"; // 120x24 box
+
+// Second Draft's human typing rhythm, with a fixed hash in place of Math.random so the build stays byte-reproducible.
+const jitter = i => ((i * 2654435761) >>> 0) / 2 ** 32;
+const pace = (ch, prev, i) => {
+  let ms = 55 + jitter(i) * 55;
+  if (prev === " ") ms += 40 + jitter(i + 97) * 60;
+  if (/[,.]/.test(prev)) ms += 220;
+  return ch === " " ? ms * 0.7 : ms;
+};
+// Remaps the path's coordinates into the target box rather than scaling it, which would stretch the stroke width too.
+const fit = (d, w, h, x0, y0, x1, y1) => d.replace(/(-?[\d.]+)[ ,]+(-?[\d.]+)/g, (_, a, b) =>
+  `${+(x0 + a / w * (x1 - x0)).toFixed(1)} ${+(y0 + b / h * (y1 - y0)).toFixed(1)}`);
+
+function tagline(x, y) {
+  const { lead, struck, fix, tail } = DRAFT;
+  const w = (font, text, size) => +outline(F[font], text, 0, 0, size).width.toFixed(1);
+  const wStruck = w("sans", struck, 18), wFix = w("hand", fix, 20);
+  const xStruck = x + w("sans", lead, 18), xFix = +(xStruck + wStruck + w("sans", " ", 18)).toFixed(1);
+  const dx = +(xFix + wFix - xStruck - wStruck).toFixed(1); // the tail moves over by a space plus the fix
+  const r = n => +n.toFixed(3), k = n => +n.toFixed(4);
+
+  // The typing clip widens one character at a time and the caret rides its edge.
+  const typed = lead + struck + tail;
+  // At the component's full pace this sentence alone takes ~3s to type; 0.65x keeps the whole revision under 5s.
+  let t = 0.3;
+  const steps = [...typed].map((ch, i) => [t += pace(ch, i ? typed[i - 1] : " ", i) * 0.65 / 1000, w("sans", typed.slice(0, i + 1), 18)]);
+  const typedAt = steps.at(-1)[0], typeDur = r(typedAt + 0.1);
+  const keyTimes = `0;${steps.map(([s]) => k(s / typeDur)).join(";")}`;
+  const widths = [0, ...steps.slice(0, -1).map(([, x1]) => r(x1 + 4)), r(steps.at(-1)[1] + dx + 8)];
+  // One blink once the line is typed, then the caret leaves and the pen takes over.
+  const blinkOff = typedAt + 0.35, blinkOn = blinkOff + 0.3, caretGone = r(blinkOn + 0.3);
+  const strikeAt = caretGone, writeAt = r(strikeAt + 0.45), flourishAt = r(writeAt + 0.75);
+
+  const ease = `calcMode="spline" keyTimes="0;1" keySplines="0.4 0 0.2 1" fill="freeze"`;
+  const strike = fit(STRIKE, 100, 20, xStruck - 1, y - 13, xStruck + wStruck + 1, y - 1);
+  const flourish = fit(FLOURISH, 120, 24, xFix - 2, y - 2, xFix + wFix + 4, y + 10);
+  const pen = (d, width) => `<path d="${d}" class="s-acc" fill="none" stroke-width="${width}" stroke-linecap="round"`;
+  // pathLength="1" lets one dash cover the whole stroke; offsetting it just past 1 hides it, round caps included.
+  const draw = (d, width, begin, dur) => `${pen(d, width)} pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1.02">` +
+    `<animate attributeName="stroke-dashoffset" values="1.02;0" ${ease} begin="${begin}s" dur="${dur}s"/></path>`;
+  const words = `<use href="#tg-lead" class="mute"/><use href="#tg-struck" class="mute"/>`;
+
+  const defs = `<defs>` +
+    txt("sans", lead, x, y, 18, `id="tg-lead"`) + txt("sans", struck, xStruck, y, 18, `id="tg-struck"`) +
+    txt("sans", tail, xStruck + wStruck, y, 18, `id="tg-tail"`) + txt("hand", fix, xFix, y, 20, `id="tg-fix"`) +
+    `<clipPath id="tg-type"><rect x="${x - 4}" y="${y - 20}" width="0" height="28">` +
+    `<animate attributeName="width" values="${widths.join(";")}" keyTimes="${keyTimes}" calcMode="discrete" dur="${typeDur}s" fill="freeze"/></rect></clipPath>` +
+    `<clipPath id="tg-write"><rect x="${r(xFix - 3)}" y="${y - 24}" width="0" height="34">` +
+    `<animate attributeName="width" values="0;${r(wFix + 8)}" ${ease} begin="${writeAt}s" dur="0.7s"/></rect></clipPath></defs>`;
+
+  const animated = `<g class="pk"><g clip-path="url(#tg-type)">${words}` +
+    `<g><animateTransform attributeName="transform" type="translate" values="0 0;${dx} 0" ${ease} begin="${writeAt}s" dur="0.4s"/>` +
+    `<use href="#tg-tail" class="mute"/></g></g>` +
+    `<rect x="${x + 1}" y="${y - 14}" width="1.5" height="18" class="mute">` +
+    `<animate attributeName="x" values="${[x, ...steps.map(([, x1]) => x + x1)].map(v => r(v + 1)).join(";")}" keyTimes="${keyTimes}" calcMode="discrete" dur="${typeDur}s" fill="freeze"/>` +
+    `<animate attributeName="opacity" values="1;0;1;0" keyTimes="0;${k(blinkOff / caretGone)};${k(blinkOn / caretGone)};1" calcMode="discrete" dur="${caretGone}s" fill="freeze"/></rect>` +
+    draw(strike, 1.8, strikeAt, 0.3) + `<use href="#tg-fix" class="acc" clip-path="url(#tg-write)"/>` + draw(flourish, 1.5, flourishAt, 0.45) + `</g>`;
+  // SMIL ignores prefers-reduced-motion, so reduced motion swaps in the finished revision drawn without animation.
+  const still = `<g class="tg-still">${words}<use href="#tg-tail" x="${dx}" class="mute"/><use href="#tg-fix" class="acc"/>` +
+    `${pen(strike, 1.8)}/>${pen(flourish, 1.5)}/></g>`;
+  return defs + animated + still;
+}
 
 const header = () =>
   dotPanel() +
-  txt("sans", MOTTO, 48, 234, 24, `class="ink"`) +
-  txt("mono", TAGLINE, 48, 272, 14, `class="mute"`, { tracking: 1 }) +
+  headline(48, 219) +
+  tagline(48, 287) +
   orchestration();
 
 // Phones stack the two blocks: side by side, GitHub's 263px README would shrink the status line to ~4px.
 // The diagram is reused unchanged and only translated; the dot panel scales down to fit the narrower width.
+// Its offset follows Y0 so the panel's first row stays at y=24 when the desktop layout moves it.
 const headerPhone = () =>
-  `<g transform="translate(-16 -46.7) scale(0.667)">${dotPanel()}</g>` +
-  txt("sans", MOTTO, 16, 112, 24, `class="ink"`) +
-  txt("mono", TAGLINE, 16, 140, 14, `class="mute"`, { tracking: 1 }) +
-  `<path d="M16 172 H444" class="rule" stroke-width="1.5"/>` +
-  `<g transform="translate(-714 150)">${orchestration()}</g>`;
+  `<g transform="translate(-16 ${+(24 - Y0 * 0.667).toFixed(1)}) scale(0.667)">${dotPanel()}</g>` +
+  headline(16, 112) +
+  tagline(16, 170) +
+  `<path d="M16 202 H444" class="rule" stroke-width="1.5"/>` +
+  `<g transform="translate(-714 180)">${orchestration()}</g>`;
 
 const PALETTES = {
   light: { ink: "#1f2328", mute: "#6e7781", rule: "#c8d1da", faint: "#dce2e9", acc: "#2f44ff", ground: "#ffffff" },
@@ -277,14 +346,16 @@ const style = p =>
   `.ink{fill:${p.ink}}.mute{fill:${p.mute}}.acc{fill:${p.acc}}.faint{fill:${p.faint}}.ground{fill:${p.ground}}` +
   `.rule{stroke:${p.rule};fill:none}.s-ink{stroke:${p.ink}}.s-acc{stroke:${p.acc}}.st-m{stop-color:${p.mute}}.st-i{stop-color:${p.ink}}` +
   `.lbl{fill:${p.mute};stroke:${p.ground};stroke-width:4px;stroke-linejoin:round;paint-order:stroke}.lbl.acc{fill:${p.acc}}` +
-  `.px{opacity:.18;animation:px 650ms ease-in-out infinite}@keyframes px{0%,100%{opacity:.18}50%{opacity:1}}` +
+  `.px{opacity:.18;animation:px 650ms ease-in-out infinite}@keyframes px{0%,100%{opacity:.18}50%{opacity:1}}.tg-still{display:none}` +
   [1, 2, 3, 4, 5, 6].map(keyframesFor).join("") +
-  // Last, so it overrides the per-mask animation rules: frozen SAIRITHIK, full diagram, no packets or readout.
-  `@media (prefers-reduced-motion:reduce){.dm,.px{animation:none}.pk{display:none}}`;
+  // Last, so it overrides the per-mask animation rules: frozen SAIRITHIK, full diagram, finished tagline, no packets or readout.
+  `@media (prefers-reduced-motion:reduce){.dm,.px{animation:none}.pk{display:none}.tg-still{display:inline}}`;
 
 const TITLE = "Sairithik Komuravelly";
-const DESC = "Sairithik, in dot-matrix letters that change to Sai and then to heysai.dev. Fast with AI. Fluent without it. " +
-  "Products, AI tooling, AI workflows. A diagram shows one ticket fanning out to five research agents, merging, going through " +
+const DESC = "Sairithik, in dot-matrix letters that change to Sai and then to heysai.dev. " +
+  "I build products, AI tooling, and the workflows that run them. " +
+  "Fast with AI, lost without it, with lost struck out and fluent written in by hand. " +
+  "A diagram shows one ticket fanning out to five research agents, merging, going through " +
   "a three-agent debate and a review gate that sends it back once, then reaching a human.";
 
 const svg = (viewBox, body, palette) => {
@@ -310,7 +381,7 @@ function checkSmil(name, markup) {
 }
 
 await mkdir(ASSETS, { recursive: true });
-const layouts = { header: ["0 48 1200 280", header()], "header-phone": ["0 16 460 464", headerPhone()] };
+const layouts = { header: ["0 48 1200 280", header()], "header-phone": ["0 16 460 494", headerPhone()] };
 for (const [layout, [viewBox, body]] of Object.entries(layouts)) {
   checkSmil(layout, body);
   for (const [theme, palette] of Object.entries(PALETTES)) {

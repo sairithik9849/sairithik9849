@@ -8,6 +8,16 @@
   </picture>
 </a>
 
+<p align="center">
+  <picture>
+    <source media="(min-width: 1012px) and (prefers-color-scheme: dark)" srcset="assets/stack-dark.svg">
+    <source media="(min-width: 1012px) and (prefers-color-scheme: light)" srcset="assets/stack-light.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/stack-phone-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/stack-phone-light.svg">
+    <img src="assets/stack-light.svg" alt="Daily drivers: TypeScript, React, Node.js, Python, and Claude Code.">
+  </picture>
+</p>
+
 Software engineer in New York. I use AI to ship fast, and I read what it writes well enough to change it by hand. Lately that's [Megatron](https://github.com/Megatron-HQ/Megatron), an open-source desktop app for Claude Code skills with 40+ users; an MCP server that lets non-technical staff query a data warehouse in plain English; and a multi-agent workflow that halved my team's time per ticket.
 
 <samp>open to full-time SWE roles · NYC or Bay Area</samp><br>

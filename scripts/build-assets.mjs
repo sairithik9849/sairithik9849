@@ -1,8 +1,9 @@
-// Builds the README header SVGs (desktop and phone layouts, light and dark) from the prototype at
-// https://claude.ai/artifact/KFzqbeS64tacyfLTKTsc9S. Run with `npm run build:header`.
+// Builds the README SVGs (header and stack strip; desktop and phone layouts, light and dark). The header was
+// ported from the prototype at https://claude.ai/artifact/KFzqbeS64tacyfLTKTsc9S. Run with `npm run build`.
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import * as fontkit from "fontkit";
+import { siClaudecode, siNodedotjs, siPython, siReact, siTypescript } from "simple-icons";
 
 const FONT_DIR = new URL(".fonts/", import.meta.url);
 const ASSETS = new URL("../assets/", import.meta.url);
@@ -341,6 +342,25 @@ const headerPhone = () =>
   `<path d="M16 202 H444" class="rule" stroke-width="1.5"/>` +
   `<g transform="translate(-714 180)">${orchestration()}</g>`;
 
+// simple-icons over svgl (21st.dev's logo source): each mark is one 24x24 path in a single color, where svgl
+// ships brand colors in layered gradients and masks.
+const STACK = [siTypescript, siReact, siNodedotjs, siPython, siClaudecode];
+const LOGO = 32, ROW = 82;
+// Unlike the header, the strip shows at 1:1, so 13px captions land at 13px. On phones five columns would
+// shrink to ~0.44x in GitHub's 263px column, so the phone layout wraps to three.
+function stack(cols, pitch) {
+  const w = cols * pitch, rows = Math.ceil(STACK.length / cols);
+  const label = txt("mono", "DAILY DRIVERS", w / 2, 22, 13, `class="mute"`, { tracking: 2, anchor: "middle" });
+  const items = STACK.map((icon, i) => {
+    const row = Math.floor(i / cols), inRow = Math.min(cols, STACK.length - row * cols);
+    const cx = (w - inRow * pitch) / 2 + (i % cols + 0.5) * pitch, top = 44 + row * ROW;
+    return `<g class="si" style="animation-delay:${150 + i * 100}ms">` +
+      `<path transform="translate(${cx - LOGO / 2} ${top}) scale(${+(LOGO / 24).toFixed(4)})" d="${icon.path}"/>` +
+      txt("mono", icon.title, cx, top + LOGO + 22, 13, `class="mute"`, { anchor: "middle" }) + `</g>`;
+  }).join("");
+  return [`0 0 ${w} ${108 + (rows - 1) * ROW}`, label + items];
+}
+
 const PALETTES = {
   light: { ink: "#1f2328", mute: "#6e7781", rule: "#c8d1da", faint: "#dce2e9", acc: "#2f44ff", ground: "#ffffff" },
   dark: { ink: "#f0f6fc", mute: "#9198a1", rule: "#3d444d", faint: "#1c222b", acc: "#8592ff", ground: "#0d1117" },
@@ -354,6 +374,12 @@ const style = p =>
   [1, 2, 3, 4, 5, 6].map(keyframesFor).join("") +
   // Last, so it overrides the per-mask animation rules: frozen SAIRITHIK, full diagram, finished tagline, no packets or readout.
   `@media (prefers-reduced-motion:reduce){.dm,.px{animation:none}.pk{display:none}.tg-still{display:inline}}`;
+// Each mark rises in blue and settles to ink, once. Logos inherit the group's fill; captions keep .mute.
+// The base rule is the finished state, so reduced motion only has to drop the animation.
+const stackStyle = p =>
+  `.mute{fill:${p.mute}}.si{fill:${p.ink};animation:si 700ms cubic-bezier(.2,.7,.2,1) both}` +
+  `@keyframes si{0%{opacity:0;transform:translateY(6px);fill:${p.acc}}35%{opacity:1;transform:none;fill:${p.acc}}100%{fill:${p.ink}}}` +
+  `@media (prefers-reduced-motion:reduce){.si{animation:none}}`;
 
 const TITLE = "Sairithik Komuravelly";
 const DESC = "Sairithik, in dot-matrix letters that change to Sai and then to heysai.dev. " +
@@ -362,10 +388,13 @@ const DESC = "Sairithik, in dot-matrix letters that change to Sai and then to he
   "A diagram shows one ticket fanning out to five research agents, merging, going through " +
   "a three-agent debate and a review gate that sends it back once, then reaching a human.";
 
-const svg = (viewBox, body, palette) => {
+const HEADER = { title: TITLE, desc: DESC, css: style };
+const STRIP = { title: "Daily drivers", desc: "TypeScript, React, Node.js, Python, and Claude Code, the tools I use every day.", css: stackStyle };
+
+const svg = (viewBox, body, { title, desc }, css) => {
   const [, , w, h] = viewBox.split(" ");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="${viewBox}" role="img" aria-labelledby="t d">` +
-    `<title id="t">${TITLE}</title><desc id="d">${DESC}</desc><style>${style(palette)}</style>${body}</svg>\n`;
+    `<title id="t">${title}</title><desc id="d">${desc}</desc><style>${css}</style>${body}</svg>\n`;
 };
 
 // Browsers drop SMIL with invalid timing without any error, so a bad edit would otherwise ship a frozen diagram.
@@ -385,12 +414,17 @@ function checkSmil(name, markup) {
 }
 
 await mkdir(ASSETS, { recursive: true });
-const layouts = { header: ["0 48 1200 280", header()], "header-phone": ["0 16 460 494", headerPhone()] };
-for (const [layout, [viewBox, body]] of Object.entries(layouts)) {
+const layouts = {
+  header: ["0 48 1200 280", header(), HEADER],
+  "header-phone": ["0 16 460 494", headerPhone(), HEADER],
+  stack: [...stack(5, 120), STRIP],
+  "stack-phone": [...stack(3, 100), STRIP],
+};
+for (const [layout, [viewBox, body, meta]] of Object.entries(layouts)) {
   checkSmil(layout, body);
   for (const [theme, palette] of Object.entries(PALETTES)) {
     const file = `${layout}-${theme}.svg`;
-    const out = svg(viewBox, body, palette);
+    const out = svg(viewBox, body, meta, meta.css(palette));
     await writeFile(new URL(file, ASSETS), out);
     console.log(`${file}  ${(out.length / 1024).toFixed(0)} KB`);
   }

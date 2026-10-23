@@ -3,12 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:header": "node scripts/build-header.mjs"
+    "build": "node scripts/build-assets.mjs"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
-    "fontkit": "2.0.4"
+    "fontkit": "2.0.4",
+    "simple-icons": "16.34.0"
   }
 }

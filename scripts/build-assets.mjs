@@ -279,10 +279,34 @@ function orchestration(s = 1, [tx, ty] = [0, 0]) {
   return shimmer + heading + placed + readout + loader;
 }
 
-// Desktop sets the headline as one line fitted to the grid; phones keep these two lines.
+// Both layouts set the headline as two lines of medium, the longer one fitted to the column, so the strokes are
+// wide enough for the liquid to show inside them. The liquid is 21st.dev's Liquid Text (@glasscn) rebuilt without
+// its WebGL shader, which GitHub's <img> can't run: accent blobs drift through ink letters on smooth loops at
+// unrelated periods, so the mix repeats only every 1001s.
 const HEADLINE = ["I build products, AI tooling,", "and the workflows that run them."];
-const headline = (lines, left, y, size) => lines.map((line, i) =>
-  txt("sans", line, left - ink("sans", line).left * size, y + i * size * 1.25, size, `class="ink"`)).join("");
+// A closed Catmull-Rom curve through the points, so a blob riding it never stops or turns a corner.
+const pt = q => q.map(v => +v.toFixed(1)).join(" ");
+const loop = pts => `M${pt(pts[0])}` + pts.map((_, i) => {
+  const [a, b, c, d] = [-1, 0, 1, 2].map(o => pts[(i + o + pts.length) % pts.length]);
+  return `C${[[b[0] + (c[0] - a[0]) / 6, b[1] + (c[1] - a[1]) / 6], [c[0] - (d[0] - b[0]) / 6, c[1] - (d[1] - b[1]) / 6], c].map(pt).join(" ")}`;
+}).join("") + "Z";
+const LIQUID = [7, 11, 13];
+function headline([x0, x1], y) {
+  const size = Math.min(...HEADLINE.map(line => fitTo([x0, x1], ink("sansMedium", line))));
+  const d = HEADLINE.map((line, i) =>
+    outline(F.sansMedium, line, x0 - ink("sansMedium", line).left * size, y + i * size * 1.25, size).d).join("");
+  const top = y - size * 0.75, h = size * 2;
+  // jitter() is linear in its seed, so seeds a constant apart would give every blob the same loop shifted over;
+  // squared seeds break that.
+  const blobs = LIQUID.map((dur, b) => {
+    const pts = Array.from({ length: 5 }, (_, j) => [x0 + jitter((b * 5 + j + 1) ** 2) * (x1 - x0), top + jitter((b * 5 + j + 40) ** 2) * h]);
+    return `<ellipse rx="${+(size * 2).toFixed(1)}" ry="${+(size * 1).toFixed(1)}" fill="url(#liq)">` +
+      `<animateMotion dur="${dur}s" repeatCount="indefinite" path="${loop(pts)}"/></ellipse>`;
+  }).join("");
+  return `<defs><path id="hl" d="${d}"/><clipPath id="hl-clip"><use href="#hl"/></clipPath>` +
+    `<radialGradient id="liq"><stop offset="0" class="st-a"/><stop offset="1" class="st-a" stop-opacity="0"/></radialGradient></defs>` +
+    `<use href="#hl" class="ink"/><g class="pk" clip-path="url(#hl-clip)">${blobs}</g>`;
+}
 // The tagline acts out its claim once on load: the sentence types out, then a pen strikes "lost" and writes
 // "fluent" in by hand. Ported from 21st.dev's Second Draft Text (@ham7a311) to one-shot SMIL, since GitHub's
 // <img> runs no JS.
@@ -367,9 +391,9 @@ function tagline(left, y, size) {
 // equal gaps from the panel to the headline's caps and from the headline to the tagline's caps.
 const DS = (RIGHT[1] - RIGHT[0]) / (1152 - 730);
 const header = () =>
-  panel(LEFT, 118.9) +
-  headline([HEADLINE.join(" ")], LEFT[0], 222.7, fitTo(LEFT, ink("sans", HEADLINE.join(" ")))) +
-  tagline(LEFT[0], 278.4, fitTo(LEFT, draftInk())) +
+  panel(LEFT, 91.5) +
+  headline(LEFT, 206.4) +
+  tagline(LEFT[0], 305.8, fitTo(LEFT, draftInk())) +
   orchestration(DS, [RIGHT[0] - DS * 730, 82 - DS * 82]);
 
 // Phones stack the two blocks: side by side, GitHub's 263px README would shrink the status line to ~4px.
@@ -378,10 +402,10 @@ const header = () =>
 const PHONE_GRID = [16, 444];
 const headerPhone = () =>
   panel(PHONE_GRID, 24) +
-  headline(HEADLINE, 16, 108.3, 22) +
-  tagline(16, 176.7, fitTo(PHONE_GRID, draftInk())) +
-  `<path d="M16 209 H444" class="rule" stroke-width="1.5"/>` +
-  `<g transform="translate(-619.6 201) scale(0.9)">${orchestration()}</g>`;
+  headline(PHONE_GRID, 112.8) +
+  tagline(16, 189, fitTo(PHONE_GRID, draftInk())) +
+  `<path d="M16 221.3 H444" class="rule" stroke-width="1.5"/>` +
+  `<g transform="translate(-619.6 213.3) scale(0.9)">${orchestration()}</g>`;
 
 // simple-icons over svgl (21st.dev's logo source): each mark is one 24x24 path in a single color, where svgl
 // ships brand colors in layered gradients and masks.
@@ -415,7 +439,8 @@ const style = p =>
   `.lbl{fill:${p.ink};stroke:${p.ground};stroke-width:4px;stroke-linejoin:round;paint-order:stroke}.lbl.acc{fill:${p.acc}}` +
   `.px{opacity:.18;animation:px 650ms ease-in-out infinite}@keyframes px{0%,100%{opacity:.18}50%{opacity:1}}.tg-still{display:none}` +
   [1, 2, 3, 4, 5, 6].map(keyframesFor).join("") +
-  // Last, so it overrides the per-mask animation rules: frozen SAIRITHIK, full diagram, finished tagline, no packets or readout.
+  // Last, so it overrides the per-mask animation rules: frozen SAIRITHIK, plain ink headline, full diagram, finished
+  // tagline, no packets or readout.
   `@media (prefers-reduced-motion:reduce){.dm,.px{animation:none}.pk{display:none}.tg-still{display:inline}}`;
 // Each mark rises in blue and settles to ink, once. Logos inherit the group's fill; captions set their own
 // .ink so they stay out of the blue. The base rule is the finished state, so reduced motion only drops the animation.
@@ -459,7 +484,7 @@ function checkSmil(name, markup) {
 await mkdir(ASSETS, { recursive: true });
 const layouts = {
   header: ["0 40 1200 332", header(), HEADER],
-  "header-phone": ["0 16 460 484", headerPhone(), HEADER],
+  "header-phone": ["0 16 460 496.3", headerPhone(), HEADER],
   stack: [...stack(5, 120), STRIP],
   "stack-phone": [...stack(3, 100), STRIP],
 };

@@ -1,12 +1,10 @@
-<a href="https://heysai.dev">
-  <picture>
-    <source media="(min-width: 1012px) and (prefers-color-scheme: dark)" srcset="assets/header-dark.svg">
-    <source media="(min-width: 1012px) and (prefers-color-scheme: light)" srcset="assets/header-light.svg">
-    <source media="(prefers-color-scheme: dark)" srcset="assets/header-phone-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="assets/header-phone-light.svg">
-    <img src="assets/header-light.svg" width="100%" alt="Sairithik, in dot-matrix letters that change to Sai and then heysai.dev. I build products, AI tooling, and the workflows that run them. Fast with AI, lost without it, with lost struck out and fluent written in by hand. A diagram of my multi-agent workflow: five agents on four models research a ticket, merge, debate, pass a review gate, and hand off to a human.">
-  </picture>
-</a>
+<picture>
+  <source media="(min-width: 1012px) and (prefers-color-scheme: dark)" srcset="assets/header-dark.svg">
+  <source media="(min-width: 1012px) and (prefers-color-scheme: light)" srcset="assets/header-light.svg">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/header-phone-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/header-phone-light.svg">
+  <img src="assets/header-light.svg" width="100%" alt="Sairithik, in dot-matrix letters that change to Sai and then heysai.dev. I build products, AI tooling, and the workflows that run them. Fast with AI, lost without it, with lost struck out and fluent written in by hand. A diagram of my multi-agent workflow: five agents on four models research a ticket, merge, debate, pass a review gate, and hand off to a human.">
+</picture>
 
 <p align="center">
   <picture>

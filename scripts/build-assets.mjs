@@ -56,6 +56,17 @@ function outline(font, text, x, y, size, { tracking = 0, anchor = "start" } = {}
   return { d, width };
 }
 const txt = (font, text, x, y, size, attrs, opts) => `<path ${attrs} d="${outline(F[font], text, x, y, size, opts).d}"/>`;
+// A line's ink edges and advance at 1px. Lines sit on the dot grid by their ink, not their pen origin, so a
+// glyph's side bearing never shows as a nudge against the dots.
+function ink(font, text) {
+  const run = F[font].layout(text), s = 1 / F[font].unitsPerEm;
+  const adv = run.positions.reduce((sum, p) => sum + p.xAdvance * s, 0);
+  return { left: run.glyphs[0].bbox.minX * s, right: adv - run.positions.at(-1).xAdvance * s + run.glyphs.at(-1).bbox.maxX * s, adv };
+}
+const fitTo = ([x0, x1], { left, right }) => (x1 - x0) / (right - left);
+// GitHub's README column shows the header at ~0.7x; at() turns an on-screen size into header units. The page's
+// type scale is 30/16/13/11px on screen.
+const at = px => +(px / 0.7).toFixed(1);
 
 const T = 21; // diagram: seven 3-second stages, long enough to read each status line
 const TN = 9; // name: three 3-second frames
@@ -80,9 +91,11 @@ const FRAMES = [
   { 3: "S", 4: "A", 5: "I" },
   { 0: "H", 1: "E", 2: "Y", 3: "S", 4: "A", 5: "I", 6: ".", 7: "D", 8: "E", 9: "V" },
 ];
-// The left column (panel, two-line headline, tagline) is centered as one block on the right column's
-// vertical center (y ≈ 188), so neither column carries extra space above or below.
-const COLS = 73, ROWS = 9, PITCH = 8.8, X0 = 48, Y0 = 89;
+// The left column (panel, headline, tagline) is centered as one block on the right column's vertical center
+// (y ≈ 184), with equal gaps from the panel to the headline's caps and from the headline to the tagline's caps.
+const COLS = 73, ROWS = 9, PITCH = 8.8, X0 = 48, Y0 = 86;
+// The faint dots' outer edges. The headline and the finished tagline span exactly this width.
+const GRID = [X0 - 1.4, X0 + (COLS - 1) * PITCH + 1.4];
 
 function litAt(f, glyphRow, col) {
   const c = col - 1;
@@ -215,14 +228,14 @@ function orchestration() {
   const CX = 944, LOADER = 19, GAP = 12;
   const shimmer =
     `<defs><linearGradient id="shim" gradientUnits="userSpaceOnUse" x1="766" y1="0" x2="966" y2="0" spreadMethod="repeat">` +
-    `<stop offset="0" class="st-m"/><stop offset="0.35" class="st-m"/><stop offset="0.5" class="st-i"/><stop offset="0.65" class="st-m"/><stop offset="1" class="st-m"/>` +
+    `<stop offset="0" class="st-i"/><stop offset="0.35" class="st-i"/><stop offset="0.5" class="st-a"/><stop offset="0.65" class="st-i"/><stop offset="1" class="st-i"/>` +
     `<animateTransform attributeName="gradientTransform" type="translate" from="0 0" to="200 0" dur="1.4s" repeatCount="indefinite"/>` +
     `</linearGradient></defs>`;
-  const xs = phases.map(([, , title]) => +(CX - (LOADER + GAP + outline(F.sansMedium, title, 0, 0, 18).width) / 2).toFixed(1));
+  const xs = phases.map(([, , title]) => +(CX - (LOADER + GAP + outline(F.sansMedium, title, 0, 0, at(13)).width) / 2).toFixed(1));
   const readout = phases.map(([a, b, title, line], p) =>
     `<g class="pk" opacity="0">${fade(a, b)}` +
-    txt("sansMedium", title, xs[p] + LOADER + GAP, 292, 18, `fill="url(#shim)"`) +
-    txt("sans", line, CX, 319, 17, `class="mute"`, { anchor: "middle" }) + `</g>`).join("");
+    txt("sansMedium", title, xs[p] + LOADER + GAP, 292, at(13), `fill="url(#shim)"`) +
+    txt("sans", line, CX, 319, at(13), `class="ink"`, { anchor: "middle" }) + `</g>`).join("");
   // One loader lives outside the per-stage fades so it never blinks out between stages; it slides to the
   // next title's position while the old title fades out, then swaps to solid (no fade) for the last stage.
   const slide = [[0, xs[0]], ...phases.flatMap(([, b], p) => [[f(b - fo), xs[p]], [b, xs[(p + 1) % 7]]])];
@@ -237,28 +250,38 @@ function orchestration() {
   // Legend points surface beside their nodes only while that stage runs, so the diagram explains itself.
   const NAMES = { claude: "Opus", grok: "Grok", codex: "Codex", gemini: "Gemini" };
   const note = (x, y, text, windows, cls = "lbl") => windows.map(([a, b]) =>
-    `<g class="pk" opacity="0">${fade(a, b)}${txt("mono", text, x, y, 13, `class="${cls}"`, { anchor: "middle" })}</g>`).join("");
+    `<g class="pk" opacity="0">${fade(a, b)}${txt("mono", text, x, y, at(11), `class="${cls}"`, { anchor: "middle" })}</g>`).join("");
   const notes =
-    ys.map((y, i) => note(800, y - 10, NAMES[models[i]], [[S(0, 0), S(1, 0)]])).join("") +
+    ys.map((y, i) => note(800, y - 12, NAMES[models[i]], [[S(0, 0), S(1, 0)]])).join("") +
     // Sits under the ring, out of the packets' path; the accent color ties it to the advocate's accent ring.
     note(958, 224, "devil's advocate", [[S(2, 0), S(3, 0)], [S(4, 0), S(5, 0)]], "lbl acc") +
     note(1005, 98, "rejected", [[S(3, 0), S(4, 0)]]) +
-    note(1052, 198, "review gate", [[S(3, 0), S(4, 0)], [S(5, 0), S(6, 0)]]) +
+    // Low enough that its halo clears the debater node at (987.4, 187); it never shows with "devil's advocate".
+    note(1052, 204, "review gate", [[S(3, 0), S(4, 0)], [S(5, 0), S(6, 0)]]) +
     note(1136, 208, "human", [[S(6, 0), S(7, 0)]]);
 
-  const heading = txt("mono", "MY MULTI-AGENT WORKFLOW", CX, 64, 14, `class="mute"`, { tracking: 2, anchor: "middle" });
+  // Same on-screen size and tracking as the stack strip's DAILY DRIVERS, which GitHub shows at 1:1.
+  const heading = txt("mono", "MY MULTI-AGENT WORKFLOW", CX, 58, at(13), `class="ink"`, { tracking: at(2), anchor: "middle" });
 
   return shimmer + heading + wires + nodes + lights + notes + packets + pulse + readout + loader;
 }
 
+// Desktop sets the headline as one line fitted to the grid; phones keep these two lines.
 const HEADLINE = ["I build products, AI tooling,", "and the workflows that run them."];
-const headline = (x, y) => HEADLINE.map((line, i) => txt("sans", line, x, y + i * 30, 24, `class="ink"`)).join("");
+const headline = (lines, left, y, size) => lines.map((line, i) =>
+  txt("sans", line, left - ink("sans", line).left * size, y + i * size * 1.25, size, `class="ink"`)).join("");
 // The tagline acts out its claim once on load: the sentence types out, then a pen strikes "lost" and writes
 // "fluent" in by hand. Ported from 21st.dev's Second Draft Text (@ham7a311) to one-shot SMIL, since GitHub's
 // <img> runs no JS.
 const DRAFT = { lead: "Fast with AI, ", struck: "lost", fix: "fluent", tail: " without it." };
-// GitHub's README column scales the header to ~0.7x, so 22px lands near 15px on screen, the smallest that reads cleanly.
-const TAGLINE_PX = 22;
+// "fluent" is set at 12/11 of the sans size, the ratio it was tuned at (24 over 22), so the line scales linearly.
+const HAND = 12 / 11;
+// The finished line's ink at 1px, laid out the way tagline() places it: lead, struck word, a space, fix, tail.
+function draftInk() {
+  const { lead, struck, fix, tail } = DRAFT;
+  const pre = ink("sans", lead).adv + ink("sans", struck).adv + ink("sans", " ").adv;
+  return { left: ink("sans", lead).left, right: pre + ink("hand", fix).adv * HAND + ink("sans", tail).right };
+}
 const STRIKE = "M2 13 C 22 10, 40 12, 60 9 S 88 8, 98 6"; // drawn in a 100x20 box
 const FLOURISH = "M3 9 C 30 15, 70 15, 104 8 C 112 6, 117 5, 116 10 C 114 16, 96 18, 84 15"; // 120x24 box
 
@@ -274,9 +297,9 @@ const pace = (ch, prev, i) => {
 const fit = (d, w, h, x0, y0, x1, y1) => d.replace(/(-?[\d.]+)[ ,]+(-?[\d.]+)/g, (_, a, b) =>
   `${+(x0 + a / w * (x1 - x0)).toFixed(1)} ${+(y0 + b / h * (y1 - y0)).toFixed(1)}`);
 
-function tagline(x, y) {
+function tagline(left, y, size) {
   const { lead, struck, fix, tail } = DRAFT;
-  const size = TAGLINE_PX, hand = TAGLINE_PX + 2;
+  const hand = size * HAND, x = left - ink("sans", lead).left * size;
   const r = n => +n.toFixed(3), k = n => +n.toFixed(4);
   const u = n => r(n * size / 18); // the offsets below were tuned at 18px; this keeps the pen marks in proportion
   const w = (font, text, px) => +outline(F[font], text, 0, 0, px).width.toFixed(1);
@@ -328,19 +351,20 @@ function tagline(x, y) {
 
 const header = () =>
   dotPanel() +
-  headline(48, 217) +
-  tagline(48, 287) +
+  headline([HEADLINE.join(" ")], GRID[0], 204.6, fitTo(GRID, ink("sans", HEADLINE.join(" ")))) +
+  tagline(GRID[0], 265.4, fitTo(GRID, draftInk())) +
   orchestration();
 
 // Phones stack the two blocks: side by side, GitHub's 263px README would shrink the status line to ~4px.
-// The diagram is reused unchanged and only translated; the dot panel scales down to fit the narrower width.
-// Its offset follows Y0 so the panel's first row stays at y=24 when the desktop layout moves it.
+// The dot panel scales so its grid spans the 16-unit margins, and its offset follows Y0 so the first row stays
+// at y=24. The diagram is reused at 0.9x, small enough that its widest status line fits the same margins.
+const PHONE_GRID = [16, 444], PS = (PHONE_GRID[1] - PHONE_GRID[0]) / (GRID[1] - GRID[0]);
 const headerPhone = () =>
-  `<g transform="translate(-16 ${+(24 - Y0 * 0.667).toFixed(1)}) scale(0.667)">${dotPanel()}</g>` +
-  headline(16, 112) +
-  tagline(16, 172) +
-  `<path d="M16 202 H444" class="rule" stroke-width="1.5"/>` +
-  `<g transform="translate(-714 180)">${orchestration()}</g>`;
+  `<g transform="translate(${+(16 - GRID[0] * PS).toFixed(2)} ${+(24 - Y0 * PS).toFixed(2)}) scale(${+PS.toFixed(4)})">${dotPanel()}</g>` +
+  headline(HEADLINE, 16, 108.3, 22) +
+  tagline(16, 176.7, fitTo(PHONE_GRID, draftInk())) +
+  `<path d="M16 209 H444" class="rule" stroke-width="1.5"/>` +
+  `<g transform="translate(-619.6 201) scale(0.9)">${orchestration()}</g>`;
 
 // simple-icons over svgl (21st.dev's logo source): each mark is one 24x24 path in a single color, where svgl
 // ships brand colors in layered gradients and masks.
@@ -350,34 +374,36 @@ const LOGO = 32, ROW = 82;
 // shrink to ~0.44x in GitHub's 263px column, so the phone layout wraps to three.
 function stack(cols, pitch) {
   const w = cols * pitch, rows = Math.ceil(STACK.length / cols);
-  const label = txt("mono", "DAILY DRIVERS", w / 2, 22, 13, `class="mute"`, { tracking: 2, anchor: "middle" });
+  const label = txt("mono", "DAILY DRIVERS", w / 2, 22, 13, `class="ink"`, { tracking: 2, anchor: "middle" });
   const items = STACK.map((icon, i) => {
     const row = Math.floor(i / cols), inRow = Math.min(cols, STACK.length - row * cols);
     const cx = (w - inRow * pitch) / 2 + (i % cols + 0.5) * pitch, top = 44 + row * ROW;
     return `<g class="si" style="animation-delay:${150 + i * 100}ms">` +
       `<path transform="translate(${cx - LOGO / 2} ${top}) scale(${+(LOGO / 24).toFixed(4)})" d="${icon.path}"/>` +
-      txt("mono", icon.title, cx, top + LOGO + 22, 13, `class="mute"`, { anchor: "middle" }) + `</g>`;
+      txt("mono", icon.title, cx, top + LOGO + 22, 13, `class="ink"`, { anchor: "middle" }) + `</g>`;
   }).join("");
   return [`0 0 ${w} ${108 + (rows - 1) * ROW}`, label + items];
 }
 
+// Text is ink at rest and accent while live or revised, with no gray tier. The accent is GitHub's link blue so
+// the SVGs and the README's links share one blue.
 const PALETTES = {
-  light: { ink: "#1f2328", mute: "#6e7781", rule: "#c8d1da", faint: "#dce2e9", acc: "#2f44ff", ground: "#ffffff" },
-  dark: { ink: "#f0f6fc", mute: "#9198a1", rule: "#3d444d", faint: "#1c222b", acc: "#8592ff", ground: "#0d1117" },
+  light: { ink: "#1f2328", rule: "#c8d1da", faint: "#dce2e9", acc: "#0969da", ground: "#ffffff" },
+  dark: { ink: "#f0f6fc", rule: "#3d444d", faint: "#1c222b", acc: "#4493f8", ground: "#0d1117" },
 };
 // ground matches GitHub's page background so node fills and label halos cut cleanly through the wires.
 const style = p =>
-  `.ink{fill:${p.ink}}.mute{fill:${p.mute}}.acc{fill:${p.acc}}.faint{fill:${p.faint}}.ground{fill:${p.ground}}` +
-  `.rule{stroke:${p.rule};fill:none}.s-ink{stroke:${p.ink}}.s-acc{stroke:${p.acc}}.st-m{stop-color:${p.mute}}.st-i{stop-color:${p.ink}}` +
-  `.lbl{fill:${p.mute};stroke:${p.ground};stroke-width:4px;stroke-linejoin:round;paint-order:stroke}.lbl.acc{fill:${p.acc}}` +
+  `.ink{fill:${p.ink}}.acc{fill:${p.acc}}.faint{fill:${p.faint}}.ground{fill:${p.ground}}` +
+  `.rule{stroke:${p.rule};fill:none}.s-ink{stroke:${p.ink}}.s-acc{stroke:${p.acc}}.st-i{stop-color:${p.ink}}.st-a{stop-color:${p.acc}}` +
+  `.lbl{fill:${p.ink};stroke:${p.ground};stroke-width:4px;stroke-linejoin:round;paint-order:stroke}.lbl.acc{fill:${p.acc}}` +
   `.px{opacity:.18;animation:px 650ms ease-in-out infinite}@keyframes px{0%,100%{opacity:.18}50%{opacity:1}}.tg-still{display:none}` +
   [1, 2, 3, 4, 5, 6].map(keyframesFor).join("") +
   // Last, so it overrides the per-mask animation rules: frozen SAIRITHIK, full diagram, finished tagline, no packets or readout.
   `@media (prefers-reduced-motion:reduce){.dm,.px{animation:none}.pk{display:none}.tg-still{display:inline}}`;
-// Each mark rises in blue and settles to ink, once. Logos inherit the group's fill; captions keep .mute.
-// The base rule is the finished state, so reduced motion only has to drop the animation.
+// Each mark rises in blue and settles to ink, once. Logos inherit the group's fill; captions set their own
+// .ink so they stay out of the blue. The base rule is the finished state, so reduced motion only drops the animation.
 const stackStyle = p =>
-  `.mute{fill:${p.mute}}.si{fill:${p.ink};animation:si 700ms cubic-bezier(.2,.7,.2,1) both}` +
+  `.ink{fill:${p.ink}}.si{fill:${p.ink};animation:si 700ms cubic-bezier(.2,.7,.2,1) both}` +
   `@keyframes si{0%{opacity:0;transform:translateY(6px);fill:${p.acc}}35%{opacity:1;transform:none;fill:${p.acc}}100%{fill:${p.ink}}}` +
   `@media (prefers-reduced-motion:reduce){.si{animation:none}}`;
 
@@ -415,8 +441,8 @@ function checkSmil(name, markup) {
 
 await mkdir(ASSETS, { recursive: true });
 const layouts = {
-  header: ["0 48 1200 280", header(), HEADER],
-  "header-phone": ["0 16 460 494", headerPhone(), HEADER],
+  header: ["0 40 1200 288", header(), HEADER],
+  "header-phone": ["0 16 460 484", headerPhone(), HEADER],
   stack: [...stack(5, 120), STRIP],
   "stack-phone": [...stack(3, 100), STRIP],
 };

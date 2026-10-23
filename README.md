@@ -18,5 +18,5 @@
 
 Software engineer in New York. I use AI to ship fast, and I read what it writes well enough to change it by hand. Lately that's [Megatron](https://github.com/Megatron-HQ/Megatron), an open-source desktop app for Claude Code skills with 40+ users; an MCP server that lets non-technical staff query a data warehouse in plain English; and a multi-agent workflow that halved my team's time per ticket.
 
-<samp>open to full-time SWE roles · NYC or Bay Area</samp><br>
-<samp><a href="https://heysai.dev">heysai.dev</a> · <a href="https://www.linkedin.com/in/sai-rithik-engineer/">linkedin</a> · <a href="mailto:sairithik8639@gmail.com">sairithik8639@gmail.com</a></samp>
+open to full-time SWE roles · NYC or Bay Area<br>
+[heysai.dev](https://heysai.dev) · [linkedin](https://www.linkedin.com/in/sai-rithik-engineer/) · [sairithik8639@gmail.com](mailto:sairithik8639@gmail.com)

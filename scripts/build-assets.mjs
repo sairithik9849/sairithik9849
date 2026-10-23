@@ -91,11 +91,12 @@ const FRAMES = [
   { 3: "S", 4: "A", 5: "I" },
   { 0: "H", 1: "E", 2: "Y", 3: "S", 4: "A", 5: "I", 6: ".", 7: "D", 8: "E", 9: "V" },
 ];
-// The left column (panel, headline, tagline) is centered as one block on the right column's vertical center
-// (y ≈ 184), with equal gaps from the panel to the headline's caps and from the headline to the tagline's caps.
+// The dot grid in its own units; panel() scales it into a page column.
 const COLS = 73, ROWS = 9, PITCH = 8.8, X0 = 48, Y0 = 86;
-// The faint dots' outer edges. The headline and the finished tagline span exactly this width.
+// The faint dots' outer edges.
 const GRID = [X0 - 1.4, X0 + (COLS - 1) * PITCH + 1.4];
+// Desktop splits 50/50: equal margins outside and between two equal columns, the name's and the diagram's.
+const M = 46.6, COL = (1200 - 3 * M) / 2, LEFT = [M, M + COL], RIGHT = [1200 - M - COL, 1200 - M];
 
 function litAt(f, glyphRow, col) {
   const c = col - 1;
@@ -134,6 +135,11 @@ function dotPanel() {
   }
   return out;
 }
+// The panel scaled so its grid spans [x0, x1], with its first row of dots at y.
+function panel([x0, x1], y) {
+  const k = (x1 - x0) / (GRID[1] - GRID[0]);
+  return `<g transform="translate(${+(x0 - GRID[0] * k).toFixed(2)} ${+(y - Y0 * k).toFixed(2)}) scale(${+k.toFixed(4)})">${dotPanel()}</g>`;
+}
 
 const on = (a, b) => `<animate attributeName="opacity" values="0;1;0" keyTimes="0;${a};${b}" calcMode="discrete" dur="${T}s" repeatCount="indefinite"/>`;
 const packet = (d, a, b) =>
@@ -143,7 +149,9 @@ const glow = (shape, windows) =>
   `<g class="pk" opacity="0">${shape}<animate attributeName="opacity" values="0;${windows.map(() => "1;0").join(";")}" ` +
   `keyTimes="0;${windows.flat().join(";")}" calcMode="discrete" dur="${T}s" repeatCount="indefinite"/></g>`;
 
-function orchestration() {
+// The graph is drawn in diagram units and placed by translate(tx ty) scale(s); the heading and readout stay in
+// page units so their text keeps its size on the type scale however large the graph is drawn.
+function orchestration(s = 1, [tx, ty] = [0, 0]) {
   const ys = [94, 132, 170, 208, 246];
   const fanOut = ys.map(y => `M736 170 C768 170 768 ${y} 800 ${y}`);
   const fanIn = ys.map(y => `M800 ${y} C834 ${y} 834 170 868 170`);
@@ -225,7 +233,9 @@ function orchestration() {
     return `<rect x="${x + c * 7}" y="${y + r * 7}" width="5" height="5" rx="1" class="acc${animated ? " px" : ""}"${style}/>`;
   }).join("");
   // Title widths come from the real font so each loader + title pair centers exactly under the diagram.
-  const CX = 944, LOADER = 19, GAP = 12;
+  // The heading sits 24 above the top label's baseline (y=82) and the title 40 below the bottom node (y=252).
+  const CX = tx + s * 944, LOADER = 19, GAP = 12;
+  const headY = +(ty + s * 82 - 24).toFixed(1), titleY = +(ty + s * 252 + 40).toFixed(1);
   const shimmer =
     `<defs><linearGradient id="shim" gradientUnits="userSpaceOnUse" x1="766" y1="0" x2="966" y2="0" spreadMethod="repeat">` +
     `<stop offset="0" class="st-i"/><stop offset="0.35" class="st-i"/><stop offset="0.5" class="st-a"/><stop offset="0.65" class="st-i"/><stop offset="1" class="st-i"/>` +
@@ -234,8 +244,8 @@ function orchestration() {
   const xs = phases.map(([, , title]) => +(CX - (LOADER + GAP + outline(F.sansMedium, title, 0, 0, at(13)).width) / 2).toFixed(1));
   const readout = phases.map(([a, b, title, line], p) =>
     `<g class="pk" opacity="0">${fade(a, b)}` +
-    txt("sansMedium", title, xs[p] + LOADER + GAP, 292, at(13), `fill="url(#shim)"`) +
-    txt("sans", line, CX, 319, at(13), `class="ink"`, { anchor: "middle" }) + `</g>`).join("");
+    txt("sansMedium", title, xs[p] + LOADER + GAP, titleY, at(13), `fill="url(#shim)"`) +
+    txt("sans", line, CX, titleY + 27, at(13), `class="ink"`, { anchor: "middle" }) + `</g>`).join("");
   // One loader lives outside the per-stage fades so it never blinks out between stages; it slides to the
   // next title's position while the old title fades out, then swaps to solid (no fade) for the last stage.
   const slide = [[0, xs[0]], ...phases.flatMap(([, b], p) => [[f(b - fo), xs[p]], [b, xs[(p + 1) % 7]]])];
@@ -244,13 +254,13 @@ function orchestration() {
     `<animateTransform attributeName="transform" type="translate" values="${slide.map(([, x]) => `${x} 0`).join(";")}" ` +
     `keyTimes="${slide.map(([t]) => t).join(";")}" calcMode="spline" ` +
     `keySplines="${slide.slice(1).map((_, i) => i % 2 ? "0.4 0 0.2 1" : "0 0 1 1").join(";")}" dur="${T}s" repeatCount="indefinite"/>` +
-    `<g>${cells(0, 276, true)}<animate attributeName="opacity" values="1;0" keyTimes="0;${S(6, 0)}" calcMode="discrete" dur="${T}s" repeatCount="indefinite"/></g>` +
-    glow(cells(0, 276, false), [[S(6, 0), 1]]) + `</g>`;
+    `<g>${cells(0, titleY - 16, true)}<animate attributeName="opacity" values="1;0" keyTimes="0;${S(6, 0)}" calcMode="discrete" dur="${T}s" repeatCount="indefinite"/></g>` +
+    glow(cells(0, titleY - 16, false), [[S(6, 0), 1]]) + `</g>`;
 
   // Legend points surface beside their nodes only while that stage runs, so the diagram explains itself.
   const NAMES = { claude: "Opus", grok: "Grok", codex: "Codex", gemini: "Gemini" };
   const note = (x, y, text, windows, cls = "lbl") => windows.map(([a, b]) =>
-    `<g class="pk" opacity="0">${fade(a, b)}${txt("mono", text, x, y, at(11), `class="${cls}"`, { anchor: "middle" })}</g>`).join("");
+    `<g class="pk" opacity="0">${fade(a, b)}${txt("mono", text, x, y, at(11) / s, `class="${cls}"`, { anchor: "middle" })}</g>`).join("");
   const notes =
     ys.map((y, i) => note(800, y - 12, NAMES[models[i]], [[S(0, 0), S(1, 0)]])).join("") +
     // Sits under the ring, out of the packets' path; the accent color ties it to the advocate's accent ring.
@@ -261,9 +271,12 @@ function orchestration() {
     note(1136, 208, "human", [[S(6, 0), S(7, 0)]]);
 
   // Same on-screen size and tracking as the stack strip's DAILY DRIVERS, which GitHub shows at 1:1.
-  const heading = txt("mono", "MY MULTI-AGENT WORKFLOW", CX, 58, at(13), `class="ink"`, { tracking: at(2), anchor: "middle" });
+  const heading = txt("mono", "MY MULTI-AGENT WORKFLOW", CX, headY, at(13), `class="ink"`, { tracking: at(2), anchor: "middle" });
 
-  return shimmer + heading + wires + nodes + lights + notes + packets + pulse + readout + loader;
+  const graph = wires + nodes + lights + notes + packets + pulse;
+  // An unscaled graph skips the group, so the phone layout's markup stays as it was.
+  const placed = s === 1 && !tx && !ty ? graph : `<g transform="translate(${+tx.toFixed(2)} ${+ty.toFixed(2)}) scale(${+s.toFixed(4)})">${graph}</g>`;
+  return shimmer + heading + placed + readout + loader;
 }
 
 // Desktop sets the headline as one line fitted to the grid; phones keep these two lines.
@@ -349,18 +362,22 @@ function tagline(left, y, size) {
   return defs + animated + still;
 }
 
+// The graph inks x 730–1152 in diagram units and scales to fill the right column, keeping its heading at y=58.
+// The left column (panel, headline, tagline) centers as one block on the right column's middle (y ≈ 206), with
+// equal gaps from the panel to the headline's caps and from the headline to the tagline's caps.
+const DS = (RIGHT[1] - RIGHT[0]) / (1152 - 730);
 const header = () =>
-  dotPanel() +
-  headline([HEADLINE.join(" ")], GRID[0], 204.6, fitTo(GRID, ink("sans", HEADLINE.join(" ")))) +
-  tagline(GRID[0], 265.4, fitTo(GRID, draftInk())) +
-  orchestration();
+  panel(LEFT, 118.9) +
+  headline([HEADLINE.join(" ")], LEFT[0], 222.7, fitTo(LEFT, ink("sans", HEADLINE.join(" ")))) +
+  tagline(LEFT[0], 278.4, fitTo(LEFT, draftInk())) +
+  orchestration(DS, [RIGHT[0] - DS * 730, 82 - DS * 82]);
 
 // Phones stack the two blocks: side by side, GitHub's 263px README would shrink the status line to ~4px.
-// The dot panel scales so its grid spans the 16-unit margins, and its offset follows Y0 so the first row stays
-// at y=24. The diagram is reused at 0.9x, small enough that its widest status line fits the same margins.
-const PHONE_GRID = [16, 444], PS = (PHONE_GRID[1] - PHONE_GRID[0]) / (GRID[1] - GRID[0]);
+// The dot panel spans the 16-unit margins with its first row at y=24. The diagram is reused at 0.9x, small
+// enough that its widest status line fits the same margins.
+const PHONE_GRID = [16, 444];
 const headerPhone = () =>
-  `<g transform="translate(${+(16 - GRID[0] * PS).toFixed(2)} ${+(24 - Y0 * PS).toFixed(2)}) scale(${+PS.toFixed(4)})">${dotPanel()}</g>` +
+  panel(PHONE_GRID, 24) +
   headline(HEADLINE, 16, 108.3, 22) +
   tagline(16, 176.7, fitTo(PHONE_GRID, draftInk())) +
   `<path d="M16 209 H444" class="rule" stroke-width="1.5"/>` +
@@ -441,7 +458,7 @@ function checkSmil(name, markup) {
 
 await mkdir(ASSETS, { recursive: true });
 const layouts = {
-  header: ["0 40 1200 288", header(), HEADER],
+  header: ["0 40 1200 332", header(), HEADER],
   "header-phone": ["0 16 460 484", headerPhone(), HEADER],
   stack: [...stack(5, 120), STRIP],
   "stack-phone": [...stack(3, 100), STRIP],
